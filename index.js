@@ -178,4 +178,4 @@ function fetchPrices(items, locations, qualities, tier, callback) {
         });
 }
 
-bot.login("NzAzOTIyMTI2OTEwMTI4MTM4.XqVrvg.0K2z8M3LFGYF_KsJ4eddxKhRoUw");
+bot.login("");
