@@ -1,5 +1,5 @@
 var items = require("./items.js");
-const key = require("./key.js");
+var key = require("./key.js");
 const Discord = require("discord.js");
 const bot = new Discord.Client();
 const https = require('https');
@@ -269,4 +269,4 @@ function fetchPrices(items, locations, qualities, tier, callback) {
         });
 }
 
-bot.login(key);
+bot.login(key.key);
