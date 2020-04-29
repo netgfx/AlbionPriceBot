@@ -6,6 +6,10 @@ const https = require('https');
 const axios = require('axios');
 var _ = require('lodash');
 const express = require('express');
+var moment = require('moment');
+// START vega-demo.js
+const vega = require('vega');
+const fs = require('fs');
 
 const app = express()
 const port = 3000
@@ -16,6 +20,7 @@ app.listen(port, () => console.log(`Example app listening at http://localhost:${
 
 console.log("starting bot...");
 const mainURL = 'https://www.albion-online-data.com/api/v2/stats';
+const imageURL = "https://gameinfo.albiononline.com/api/gameinfo/items/";
 const botID = "703966342159794176";
 const botName = "PricesBot";
 
@@ -69,7 +74,7 @@ bot.on("message", (message) => {
             });
 
             console.log(">>>>> ", data);
-
+            let graphPrices = [];
             let topPrices = [];
             let locations = where.split(",");
             //console.log(locations);
@@ -89,25 +94,39 @@ bot.on("message", (message) => {
                         topPrices.push(formatBuyPrice(cityLocations[2]));
                         topPrices.push(formatBuyPrice(cityLocations[1]));
                         topPrices.push(formatBuyPrice(cityLocations[0]));
+                        graphPrices.push(cityLocations[0]);
+                        graphPrices.push(cityLocations[1]);
+                        graphPrices.push(cityLocations[2]);
                     } else if (cityLocations.length >= 2) {
                         topPrices.push(formatBuyPrice(cityLocations[1]));
                         topPrices.push(formatBuyPrice(cityLocations[0]));
+                        graphPrices.push(cityLocations[0]);
+                        graphPrices.push(cityLocations[1]);
                     } else if (cityLocations.length === 1) {
                         topPrices.push(formatBuyPrice(cityLocations[0]));
+                        graphPrices.push(cityLocations[0]);
                     }
                 });
 
                 console.log(topPrices);
+
+
             } else {
                 if (data.length >= 3) {
                     topPrices.push(formatBuyPrice(data[2]));
                     topPrices.push(formatBuyPrice(data[1]));
                     topPrices.push(formatBuyPrice(data[0]));
+                    graphPrices.push(cityLocations[0]);
+                    graphPrices.push(cityLocations[1]);
+                    graphPrices.push(cityLocations[2]);
                 } else if (data.length >= 2) {
                     topPrices.push(formatBuyPrice(data[1]));
                     topPrices.push(formatBuyPrice(data[0]));
+                    graphPrices.push(cityLocations[0]);
+                    graphPrices.push(cityLocations[1]);
                 } else if (data.length === 1) {
                     topPrices.push(formatBuyPrice(data[0]));
+                    graphPrices.push(cityLocations[0]);
                 }
 
                 console.log(topPrices);
@@ -118,6 +137,8 @@ bot.on("message", (message) => {
             } else {
                 message.channel.send("```" + _.join(topPrices, "\n") + "```");
             }
+
+            embedPrices(graphPrices, what);
         });
 
     } else if (message.content.indexOf("-fetchsell-") !== -1) {
@@ -148,6 +169,7 @@ bot.on("message", (message) => {
             console.log(">>>>> ", data);
 
             let topPrices = [];
+            let embedPrices = [];
             let locations = where.split(",");
             //console.log(locations);
             if (locations.length > 1) {
@@ -218,11 +240,52 @@ function searchItem(item) {
 
 // formats the price to be humanly readable
 function formatPrice(item) {
-    return "CITY: " + item.city + " -- " + "MIN PRICE: " + item.sell_price_min + " -- " + formatQuality(item.quality);
+    let diff = moment(new Date(item.sell_price_min_date));
+    return "CITY: " + item.city + " -- " + "MIN PRICE: " + item.sell_price_min + " -- " + formatQuality(item.quality) + " -- UPDATED: " + diff.fromNow();
 }
 
 function formatBuyPrice(item) {
-    return "CITY: " + item.city + " -- " + "MAX BUY ORDER: " + item.buy_price_max + " -- " + formatQuality(item.quality);
+    let diff = moment(new Date(item.buy_price_min_date));
+    return "CITY: " + item.city + " -- " + "MAX BUY ORDER: " + item.buy_price_max + " -- " + formatQuality(item.quality) + " -- UPDATED: " + diff.fromNow();
+}
+
+/**
+ *
+ *
+ * @param {*} items
+ * @param {*} name
+ * @returns
+ */
+function formatEmbed(items, name) {
+
+    var itemEmbed = new Discord.MessageEmbed()
+        .setColor('#0099ff')
+        .setTitle('Some title')
+        .setURL('https://discord.js.org/')
+        //.setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
+        .setDescription('Price for ' + name)
+        .setThumbnail(imageURL + name)
+        .addFields({ name: 'Locations', value: "", inline: true }, { name: 'Min Sell Price', value: '', inline: true }, { name: 'Last Updated', value: '', inline: true }, { name: '\u200B', value: '\u200B' })
+        //.addField('Inline field title', 'Some value here', true)
+        //.setImage('https://i.imgur.com/wSTFkRM.png')
+        .setTimestamp()
+        .setFooter('Made by Netgfx');
+
+    _.forEach(items, o => {
+        itemEmbed.addField("", item.city, true);
+        itemEmbed.addField("", item.buy_price_min, true);
+        itemEmbed.addField("", formatQuality(item.quality));
+    });
+
+    return itemEmbed;
+}
+
+/**
+ *
+ *
+ */
+function renderGraph() {
+
 }
 
 // format quality
