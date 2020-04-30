@@ -70,6 +70,7 @@ bot.on("message", (message) => {
         }
 
     } else if (message.content.indexOf("-fetch-") !== -1) {
+        message.channel.startTyping();
         let splitMessage = message.content.split("-");
         console.log(splitMessage);
         let what = splitMessage[2] || "t2_bag";
@@ -163,6 +164,7 @@ bot.on("message", (message) => {
             } else {
                 //message.channel.send("```" + _.join(topPrices, "\n") + "```");
                 message.channel.send(formatEmbed(embedPrices, what, enchantment));
+                message.channel.stopTyping();
             }
         });
     } else {
