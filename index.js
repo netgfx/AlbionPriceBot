@@ -24,11 +24,25 @@ const imageURL = "https://gameinfo.albiononline.com/api/gameinfo/items/";
 const botID = "703966342159794176";
 const botName = "PricesBot";
 
+// Admin //
+var isMaintenance = false;
+var admins = ["MDobs"];
+
 bot.on("message", (message) => {
     console.log(message);
 
     if (message.author.username === botName) {
         return;
+    }
+
+    // check if in maintenance mode, if yes only answer to admins //
+
+    if (isMaintenance === true) {
+        if (admins.indexOf(message.author.username) !== -1) {
+            // continue
+        } else {
+            message.channel.send(":tools: This Bot is currently in Maintenance mode, we will boost nanites to work faster! :tools:");
+        }
     }
 
     if (message.content === "ping") {
