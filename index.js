@@ -89,6 +89,7 @@ bot.on("message", (message) => {
 
             if (data.length === 0) {
                 message.channel.send("Nothing found, make sure you use proper commands, for help type -help");
+                message.channel.stopTyping();
             }
 
             data = _.sortBy(data, function(o) {
@@ -161,6 +162,7 @@ bot.on("message", (message) => {
 
             if (topPrices.length === 0) {
                 message.channel.send("Nothing found, make sure you use proper commands, for help type **-help**");
+                message.channel.stopTyping();
             } else {
                 //message.channel.send("```" + _.join(topPrices, "\n") + "```");
                 message.channel.send(formatEmbed(embedPrices, what, enchantment));
