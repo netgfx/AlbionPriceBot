@@ -249,7 +249,6 @@ function formatEmbed(items, name, enchantment, graphURL) {
         //.addField('Inline field title', 'Some value here', true)
         //.setImage('https://i.imgur.com/wSTFkRM.png')
         .setTimestamp()
-        .setImage(graphURL)
         .setFooter('Made by Netgfx');
 
     let citiesStr = "";
@@ -292,8 +291,9 @@ function formatEmbed(items, name, enchantment, graphURL) {
         itemEmbed.addField("‏‏‎Last Updated", dateBuyStr, true);
     }
 
+    const file = new Discord.MessageAttachment(graphURL);
 
-    return itemEmbed;
+    return { files: [file], embed: itemEmbed }
 }
 
 /**
