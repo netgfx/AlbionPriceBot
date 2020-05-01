@@ -36,7 +36,7 @@ const botID = "703966342159794176";
 const botName = "PricesBot";
 
 // Admin //
-var isMaintenance = true;
+var isMaintenance = false;
 var admins = ["MDobs"];
 
 bot.on("message", (message) => {
