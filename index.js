@@ -23,6 +23,7 @@ console.log("starting bot...");
 const mainURL = 'https://www.albion-online-data.com/api/v2/stats';
 const imageURL = "https://gameinfo.albiononline.com/api/gameinfo/items/";
 const graphURL = "https://www.albion-online-data.com/api/v2/stats/charts/";
+const baseImagePath = "http://env-8656818.fr-1.paas.massivegrid.net/images/";
 
 //T4_BAG ? date = 3 - 29 - 2020 & locations=martlock, bridgewatch & qualities=2 & time - scale=6"
 
@@ -30,7 +31,7 @@ const botID = "703966342159794176";
 const botName = "PricesBot";
 
 // Admin //
-var isMaintenance = false;
+var isMaintenance = true;
 var admins = ["MDobs"];
 
 bot.on("message", (message) => {
@@ -84,94 +85,112 @@ bot.on("message", (message) => {
             where = "bridgewatch,martlock,lymhurst,thetford,fortsterling,caerleon";
         }
 
-        fetchPrices(what, where, quality, enchantment, (data) => {
-            console.log(data);
+        // GRAPH RENDERING //
+        let date = moment();
+        let _weekOldDate = date.subtract(7, 'days');
+        _weekOldDate = _weekOldDate.format("M-D-YYYY");
+        // date=4-24-2020
+        fetchGraph(what, _weekOldDate, where, quality, enchantment, (data) => {
+            console.log(">>>> GRAPH >>>>>> \n", data);
 
-            if (data.length === 0) {
-                message.channel.send("Nothing found, make sure you use proper commands, for help type -help");
-                message.channel.stopTyping();
-            }
+            renderGraph(data, (imgURL) => {
 
-            data = _.sortBy(data, function(o) {
-                return o.sell_price_min;
-            });
+                // LIST RENDERING //
 
-            console.log(">>>>> ", data);
+                fetchPrices(what, where, quality, enchantment, (data) => {
+                    console.log(data);
 
-            let topPrices = [];
-            let embedPrices = [];
-            let locations = where.split(",");
-            //console.log(locations);
-            if (locations.length > 1) {
-                _.forEach(locations, (o) => {
-                    let cityLocations = _.filter(data, (d) => {
-                        console.log(d.city.replace(" ", "").toLowerCase(), o.toLowerCase(), d.sell_price_min, d.quality, quality);
-                        if (d.city.replace(" ", "").toLowerCase() === o.toLowerCase() && d.sell_price_min > 0) {
-                            return true;
-                        } else {
-                            return false;
-                        }
+                    if (data.length === 0) {
+                        message.channel.send("Nothing found, make sure you use proper commands, for help type -help");
+                        message.channel.stopTyping();
+                    }
+
+                    data = _.sortBy(data, function(o) {
+                        return o.sell_price_min;
                     });
 
-                    console.log("LOCATIONS: ", cityLocations);
-                    if (cityLocations.length >= 3) {
-                        topPrices.push(formatPrice(cityLocations[0]));
-                        topPrices.push(formatPrice(cityLocations[1]));
-                        topPrices.push(formatPrice(cityLocations[2]));
-                        //
-                        embedPrices.push(cityLocations[0]);
-                        embedPrices.push(cityLocations[1]);
-                        embedPrices.push(cityLocations[2]);
-                    } else if (cityLocations.length >= 2) {
-                        topPrices.push(formatPrice(cityLocations[0]));
-                        topPrices.push(formatPrice(cityLocations[1]));
-                        //
-                        embedPrices.push(cityLocations[0]);
-                        embedPrices.push(cityLocations[1]);
-                    } else if (cityLocations.length === 1) {
-                        topPrices.push(formatPrice(cityLocations[0]));
-                        //
-                        embedPrices.push(cityLocations[0]);
+                    console.log(">>>>> ", data);
+
+                    let topPrices = [];
+                    let embedPrices = [];
+                    let locations = where.split(",");
+                    //console.log(locations);
+                    if (locations.length > 1) {
+                        _.forEach(locations, (o) => {
+                            let cityLocations = _.filter(data, (d) => {
+                                console.log(d.city.replace(" ", "").toLowerCase(), o.toLowerCase(), d.sell_price_min, d.quality, quality);
+                                if (d.city.replace(" ", "").toLowerCase() === o.toLowerCase() && d.sell_price_min > 0) {
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            });
+
+                            console.log("LOCATIONS: ", cityLocations);
+                            if (cityLocations.length >= 3) {
+                                topPrices.push(formatPrice(cityLocations[0]));
+                                topPrices.push(formatPrice(cityLocations[1]));
+                                topPrices.push(formatPrice(cityLocations[2]));
+                                //
+                                embedPrices.push(cityLocations[0]);
+                                embedPrices.push(cityLocations[1]);
+                                embedPrices.push(cityLocations[2]);
+                            } else if (cityLocations.length >= 2) {
+                                topPrices.push(formatPrice(cityLocations[0]));
+                                topPrices.push(formatPrice(cityLocations[1]));
+                                //
+                                embedPrices.push(cityLocations[0]);
+                                embedPrices.push(cityLocations[1]);
+                            } else if (cityLocations.length === 1) {
+                                topPrices.push(formatPrice(cityLocations[0]));
+                                //
+                                embedPrices.push(cityLocations[0]);
+                            }
+                        });
+
+                        console.log(topPrices);
+                    } else {
+                        if (data.length >= 3) {
+                            topPrices.push(formatPrice(data[0]));
+                            topPrices.push(formatPrice(data[1]));
+                            topPrices.push(formatPrice(data[2]));
+                            //
+                            embedPrices.push(cityLocations[0]);
+                            embedPrices.push(cityLocations[1]);
+                            embedPrices.push(cityLocations[2]);
+                        } else if (data.length >= 2) {
+                            topPrices.push(formatPrice(data[0]));
+                            topPrices.push(formatPrice(data[1]));
+                            //
+                            embedPrices.push(cityLocations[0]);
+                            embedPrices.push(cityLocations[1]);
+                        } else if (data.length === 1) {
+                            topPrices.push(formatPrice(data[0]));
+                            //
+                            embedPrices.push(cityLocations[0]);
+                        }
+
+                        //console.log(topPrices);
+                    }
+
+                    if (topPrices.length === 0) {
+                        message.channel.send("Nothing found, make sure you use proper commands, for help type **-help**");
+                        message.channel.stopTyping();
+                    } else {
+                        //message.channel.send("```" + _.join(topPrices, "\n") + "```");
+                        message.channel.send(formatEmbed(embedPrices, what, enchantment, baseImagePath + imgURL));
+                        message.channel.stopTyping();
                     }
                 });
 
-                console.log(topPrices);
-            } else {
-                if (data.length >= 3) {
-                    topPrices.push(formatPrice(data[0]));
-                    topPrices.push(formatPrice(data[1]));
-                    topPrices.push(formatPrice(data[2]));
-                    //
-                    embedPrices.push(cityLocations[0]);
-                    embedPrices.push(cityLocations[1]);
-                    embedPrices.push(cityLocations[2]);
-                } else if (data.length >= 2) {
-                    topPrices.push(formatPrice(data[0]));
-                    topPrices.push(formatPrice(data[1]));
-                    //
-                    embedPrices.push(cityLocations[0]);
-                    embedPrices.push(cityLocations[1]);
-                } else if (data.length === 1) {
-                    topPrices.push(formatPrice(data[0]));
-                    //
-                    embedPrices.push(cityLocations[0]);
-                }
-
-                //console.log(topPrices);
-            }
-
-            if (topPrices.length === 0) {
-                message.channel.send("Nothing found, make sure you use proper commands, for help type **-help**");
-                message.channel.stopTyping();
-            } else {
-                //message.channel.send("```" + _.join(topPrices, "\n") + "```");
-                message.channel.send(formatEmbed(embedPrices, what, enchantment));
-                message.channel.stopTyping();
-            }
+            });
         });
+
     } else {
         message.channel.send("Sorry didn't catch that, make sure you use proper commands, for help type **-help**");
     }
+
+
 });
 
 // HELPER FUNCTIONS 
@@ -207,10 +226,10 @@ function formatBuyPrice(item) {
  * @param {*} name
  * @returns
  */
-function formatEmbed(items, name, enchantment) {
+function formatEmbed(items, name, enchantment, graphURL) {
 
     console.log("EMBED: ");
-    console.log(items);
+    console.log(graphURL);
 
     var itemEmbed = new Discord.MessageEmbed()
         .setColor('#ffffff')
@@ -222,6 +241,7 @@ function formatEmbed(items, name, enchantment) {
         //.addField('Inline field title', 'Some value here', true)
         //.setImage('https://i.imgur.com/wSTFkRM.png')
         .setTimestamp()
+        .setImage(graphURL)
         .setFooter('Made by Netgfx');
 
     let citiesStr = "";
@@ -272,30 +292,46 @@ function formatEmbed(items, name, enchantment) {
  *
  *
  */
-function renderGraph() {
+function renderGraph(data, callback) {
     var chartObj = makeGraphJSON(data);
 
     // create a new view instance for a given Vega JSON spec
     // create a new view instance for a given Vega JSON spec
-    var view = new vega
-        .View(vega.parse(chartObj))
-        .renderer('none')
-        .initialize();
+    var view = new vega.View(vega.parse(chartObj), { renderer: 'none' });
+
 
     // generate static PNG file from chart
-    view
-        .toCanvas()
+    view.toCanvas()
         .then(function(canvas) {
-            // process node-canvas instance for example, generate a PNG stream to write var
-            // stream = canvas.createPNGStream();
-            console.log('Writing PNG to file...');
+            // process node-canvas instance
+            // for example, generate a PNG stream to write
+            //var stream = canvas.createPNGStream();
+
             let uniqueId = _.uniqueId("-img");
-            fs.writeFile('./images/prices' + uniqueId + '.png', canvas.toBuffer())
+            let imgurl = './images/prices' + uniqueId + '.jpg';
+            fs.writeFile(imgurl, canvas.toBuffer('image/jpeg', { quality: 1.0 }), err => {
+                console.log(err);
+
+                if (callback) {
+                    callback('prices' + uniqueId + '.jpg');
+                }
+            })
         })
-        .catch(function(err) {
-            console.log("Error writing PNG to file:")
-            console.error(err)
-        });
+        .catch(function(err) { console.error(err); });
+
+    // view
+    //     .toCanvas()
+    //     .then(function(canvas) {
+    //         // process node-canvas instance for example, generate a PNG stream to write var
+    //         // stream = canvas.createPNGStream();
+    //         console.log('Writing PNG to file...');
+    //         let uniqueId = _.uniqueId("-img");
+    //         fs.writeFile('./images/prices' + uniqueId + '.png', canvas.toBuffer())
+    //     })
+    //     .catch(function(err) {
+    //         console.log("Error writing PNG to file:")
+    //         console.error(err)
+    //     });
 }
 
 // format quality
@@ -345,55 +381,113 @@ function fetchPrices(items, locations, qualities, tier, callback) {
 /**
  *
  *
+ * @param {*} items
+ * @param {*} locations
+ * @param {*} qualities
+ * @param {*} tier
+ * @param {*} callback
+ */
+function fetchGraph(items, date, locations, qualities, tier, callback) {
+    const options = {
+        hostname: graphURL,
+        path: escape(items + tier) + "?date=" + date + "&locations=" + locations + "&qualities=" + qualities + "&time-scale=24",
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    }
+
+    console.log(options.hostname + options.path);
+
+    axios.get(options.hostname + options.path)
+        .then(response => {
+            console.log(response.data.url);
+            console.log(response.data.explanation);
+
+            if (callback) {
+                callback(response.data);
+            }
+
+        })
+        .catch(error => {
+            console.log(error);
+        });
+}
+
+/**
+ *
+ *
  * @param {*} data
  */
 function makeGraphJSON(data) {
     var obj = {};
 
     // make data for: values, colors
+    /**
+     * 
+     * {city: "lymhurst", timestamp: 2020-02-01, price_avg: 10}
+     * 
+     */
+    let _dataList = [];
+    _.forEach(data, o => {
+        let items = o.data;
+        for (var i = 0; i < o.data.timestamps.length; i++) {
+
+            _dataList.push({
+                city: o.location,
+                timestamp: moment(new Date(items.timestamps[i])).format("M-D-YY HH:mm"),
+                price: items.prices_avg[i]
+            });
+        }
+    });
+
+    _dataList = _.sortBy(_dataList, [function(o) { return o.city; }]);
+
+    console.log(_dataList);
+
     var colors = {
         "bridgewatch": "#FFCA05",
+        "caerleon": "#c1c1c1",
         "lymhurst": "#B5E617",
         "fortsterling": "#FFFFFF",
         "thetford": "#A547A5",
         "martlock": "#03A3E7"
     };
 
-    var cityColors = [m1];
+    var colorRanges = [
+        "#FFCA05",
+        "#010101",
+        "#c1c1c1",
+        "#B5E617",
+        "#03A3E7",
+        "#A547A5"
+    ];
+
+    var cityColors = colorRanges;
 
     obj = {
         "$schema": "https://vega.github.io/schema/vega/v5.json",
         "description": "A basic line chart example.",
         "width": 500,
         "height": 200,
+        "background": "#ffffff",
         "padding": 5,
 
         "signals": [{
             "name": "interpolate",
-            "value": "linear"
+            "value": "basis"
         }],
 
         "data": [{
             "name": "table",
-            "values": [
-                // { "x": 0, "y": 28, "c": 0 }, { "x": 0, "y": 20, "c": 1 },
-                // { "x": 1, "y": 43, "c": 0 }, { "x": 1, "y": 35, "c": 1 },
-                // { "x": 2, "y": 81, "c": 0 }, { "x": 2, "y": 10, "c": 1 },
-                // { "x": 3, "y": 19, "c": 0 }, { "x": 3, "y": 15, "c": 1 },
-                // { "x": 4, "y": 52, "c": 0 }, { "x": 4, "y": 48, "c": 1 },
-                // { "x": 5, "y": 24, "c": 0 }, { "x": 5, "y": 28, "c": 1 },
-                // { "x": 6, "y": 87, "c": 0 }, { "x": 6, "y": 66, "c": 1 },
-                // { "x": 7, "y": 17, "c": 0 }, { "x": 7, "y": 27, "c": 1 },
-                // { "x": 8, "y": 68, "c": 0 }, { "x": 8, "y": 16, "c": 1 },
-                // { "x": 9, "y": 49, "c": 0 }, { "x": 9, "y": 25, "c": 1 }
-            ]
+            "values": _dataList
         }],
 
         "scales": [{
                 "name": "x",
                 "type": "point",
                 "range": "width",
-                "domain": { "data": "table", "field": "x" }
+                "domain": { "data": "table", "field": "timestamp" }
             },
             {
                 "name": "y",
@@ -401,7 +495,7 @@ function makeGraphJSON(data) {
                 "range": "height",
                 "nice": true,
                 "zero": true,
-                "domain": { "data": "table", "field": "y" }
+                "domain": { "data": "table", "field": "price" }
             },
             {
                 "name": "color",
@@ -446,8 +540,8 @@ function makeGraphJSON(data) {
                 "from": { "data": "series" },
                 "encode": {
                     "enter": {
-                        "x": { "scale": "x", "field": "x" },
-                        "y": { "scale": "y", "field": "y" },
+                        "x": { "scale": "x", "field": "timestamp" },
+                        "y": { "scale": "y", "field": "price" },
                         "stroke": { "scale": "color", "field": "city" },
                         "strokeWidth": { "value": 2 }
                     },
