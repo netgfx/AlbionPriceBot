@@ -16,6 +16,7 @@ const app = express()
 const port = 3000
 
 app.get('/', (req, res) => res.send('Albion Price Bot is online!'));
+app.use('/images', express.static('files'));
 
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
 
@@ -390,7 +391,7 @@ function fetchPrices(items, locations, qualities, tier, callback) {
 function fetchGraph(items, date, locations, qualities, tier, callback) {
     const options = {
         hostname: graphURL,
-        path: escape(items + tier) + "?date=" + date + "&locations=" + locations + "&qualities=" + qualities + "&time-scale=24",
+        path: escape(items + tier) + "?date=" + date + "&locations=" + locations + "&qualities=" + qualities + "&time-scale=6",
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
