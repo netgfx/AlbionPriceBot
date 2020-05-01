@@ -39,9 +39,11 @@ const botName = "PricesBot";
 var isMaintenance = false;
 var admins = ["MDobs"];
 
+var _message = {};
+
 bot.on("message", (message) => {
     console.log(message);
-
+    _message = message;
     if (message.author.username === botName) {
         return;
     }
@@ -193,6 +195,7 @@ bot.on("message", (message) => {
 
     } else {
         message.channel.send("Sorry didn't catch that, make sure you use proper commands, for help type **-help**");
+        message.channel.stopTyping();
     }
 
 
@@ -380,6 +383,7 @@ function fetchPrices(items, locations, qualities, tier, callback) {
         })
         .catch(error => {
             console.log(error);
+            _message.channel.stopTyping();
         });
 }
 
@@ -416,6 +420,7 @@ function fetchGraph(items, date, locations, qualities, tier, callback) {
         })
         .catch(error => {
             console.log(error);
+            _message.channel.stopTyping();
         });
 }
 
