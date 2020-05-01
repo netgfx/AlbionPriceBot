@@ -11,12 +11,16 @@ var moment = require('moment');
 const vega = require('vega');
 const vegaLite = require('vega-lite');
 const fs = require('fs');
+var serveIndex = require('serve-index');
+var serveStatic = require('serve-static');
 
 const app = express()
-const port = 3000
+const port = 80
 
 app.get('/', (req, res) => res.send('Albion Price Bot is online!'));
-app.use('/images', express.static('files'));
+app.use('/images', serveIndex('images'));
+app.use('/images', express.static('images'));
+app.use('/ftp', express.static('/images'), serveIndex('/images', { 'icons': true }));
 
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
 
