@@ -15,7 +15,7 @@ var serveIndex = require('serve-index');
 var serveStatic = require('serve-static');
 
 const app = express()
-const port = 80
+const port = 8080
 
 app.get('/', (req, res) => res.send('Albion Price Bot is online!'));
 app.use('/images', serveIndex('images'));
@@ -28,7 +28,7 @@ console.log("starting bot...");
 const mainURL = 'https://www.albion-online-data.com/api/v2/stats';
 const imageURL = "https://gameinfo.albiononline.com/api/gameinfo/items/";
 const graphURL = "https://www.albion-online-data.com/api/v2/stats/charts/";
-const baseImagePath = "http://env-8656818.fr-1.paas.massivegrid.net/images/";
+const baseImagePath = "http://env-8656818.fr-1.paas.massivegrid.net:8080/images/";
 
 //T4_BAG ? date = 3 - 29 - 2020 & locations=martlock, bridgewatch & qualities=2 & time - scale=6"
 
@@ -395,7 +395,7 @@ function fetchPrices(items, locations, qualities, tier, callback) {
 function fetchGraph(items, date, locations, qualities, tier, callback) {
     const options = {
         hostname: graphURL,
-        path: escape(items + tier) + "?date=" + date + "&locations=" + locations + "&qualities=" + qualities + "&time-scale=6",
+        path: escape(items + tier) + "?date=" + date + "&locations=" + locations + "&qualities=" + qualities + "&time-scale=24",
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
