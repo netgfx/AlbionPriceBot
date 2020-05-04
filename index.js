@@ -26,7 +26,7 @@ app.use('/ftp', express.static('/images'), serveIndex('/images', { 'icons': true
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
 
 // Admin //
-var isLocal = true;
+var isLocal = false;
 var isMaintenance = false;
 var admins = ["MDobs"];
 
