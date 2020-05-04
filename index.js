@@ -13,6 +13,7 @@ const vegaLite = require('vega-lite');
 const fs = require('fs');
 var serveIndex = require('serve-index');
 var serveStatic = require('serve-static');
+const del = require('del');
 
 const app = express()
 const port = 8080
@@ -24,22 +25,28 @@ app.use('/ftp', express.static('/images'), serveIndex('/images', { 'icons': true
 
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
 
+// Admin //
+var isLocal = true;
+var isMaintenance = false;
+var admins = ["MDobs"];
+
 console.log("starting bot...");
 const mainURL = 'https://www.albion-online-data.com/api/v2/stats';
 const imageURL = "https://gameinfo.albiononline.com/api/gameinfo/items/";
 const graphURL = "https://www.albion-online-data.com/api/v2/stats/charts/";
-const baseImagePath = "http://env-8656818.fr-1.paas.massivegrid.net:8080/images/";
+const baseImagePath = isLocal === true ? "./images/" : "http://env-8656818.fr-1.paas.massivegrid.net:8080/images/";
 
 //T4_BAG ? date = 3 - 29 - 2020 & locations=martlock, bridgewatch & qualities=2 & time - scale=6"
 
 const botID = "703966342159794176";
 const botName = "PricesBot";
 
-// Admin //
-var isMaintenance = false;
-var admins = ["MDobs"];
+
 
 var _message = {};
+
+// init functions //
+removeGraphs();
 
 bot.on("message", (message) => {
     console.log(message);
@@ -98,14 +105,14 @@ bot.on("message", (message) => {
         _weekOldDate = _weekOldDate.format("M-D-YYYY");
         // date=4-24-2020
         fetchGraph(what, _weekOldDate, where, quality, enchantment, (data) => {
-            console.log(">>>> GRAPH >>>>>> \n", data);
+            console.log(">>>> GRAPH >>>>>> \n", data, data[0].timestamps);
 
             renderGraph(data, (imgURL) => {
 
                 // LIST RENDERING //
 
                 fetchPrices(what, where, quality, enchantment, (data) => {
-                    console.log(data);
+                    //console.log(data);
 
                     if (data.length === 0) {
                         message.channel.send("Nothing found, make sure you use proper commands, for help type -help");
@@ -116,7 +123,7 @@ bot.on("message", (message) => {
                         return o.sell_price_min;
                     });
 
-                    console.log(">>>>> ", data);
+                    // console.log(">>>>> ", data);
 
                     let topPrices = [];
                     let embedPrices = [];
@@ -369,12 +376,12 @@ function fetchPrices(items, locations, qualities, tier, callback) {
         }
     }
 
-    console.log(options.hostname + options.path);
+    //console.log(options.hostname + options.path);
 
     axios.get(options.hostname + options.path)
         .then(response => {
-            console.log(response.data.url);
-            console.log(response.data.explanation);
+            //console.log(response.data.url);
+            //console.log(response.data.explanation);
 
             if (callback) {
                 callback(response.data);
@@ -397,9 +404,13 @@ function fetchPrices(items, locations, qualities, tier, callback) {
  * @param {*} callback
  */
 function fetchGraph(items, date, locations, qualities, tier, callback) {
+
+    if (qualities <= 0) {
+        qualities = 1;
+    }
     const options = {
         hostname: graphURL,
-        path: escape(items + tier) + "?date=" + date + "&locations=" + locations + "&qualities=" + qualities + "&time-scale=24",
+        path: escape(items + tier) + "?date=" + date + "&locations=" + locations + "&qualities=" + qualities + "&time-scale=6",
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
@@ -427,6 +438,24 @@ function fetchGraph(items, date, locations, qualities, tier, callback) {
 /**
  *
  *
+ */
+async function removeGraphs() {
+    const fsPromises = require('fs').promises;
+
+    const directory = './images/';
+
+    // await fsPromises.rmdir(directory, {
+    //     recursive: true
+    // });
+
+    const deletedPaths = await del(['images/*.jpg', 'images/*.png']);
+
+    console.log('Deleted files in images:\n', deletedPaths.join('\n'));
+}
+
+/**
+ *
+ *
  * @param {*} data
  */
 function makeGraphJSON(data) {
@@ -446,14 +475,15 @@ function makeGraphJSON(data) {
             _dataList.push({
                 city: o.location,
                 timestamp: moment(new Date(items.timestamps[i])).format("M-D-YY HH:mm"),
-                price: items.prices_avg[i]
+                price: items.prices_avg[i],
+                xLabel: moment(new Date(items.timestamps[i])).format('M-D')
             });
         }
     });
 
     _dataList = _.sortBy(_dataList, [function(o) { return o.city; }]);
 
-    console.log(_dataList);
+    console.log("DATA GRAPH: \n", _dataList);
 
     var colors = {
         "bridgewatch": "#FFCA05",
@@ -484,9 +514,14 @@ function makeGraphJSON(data) {
         "padding": 5,
 
         "signals": [{
-            "name": "interpolate",
-            "value": "basis"
-        }],
+                "name": "interpolate",
+                "value": "basis"
+            },
+            {
+                "name": "xL",
+                "update": "data('table')"
+            }
+        ],
 
         "data": [{
             "name": "table",
@@ -520,7 +555,13 @@ function makeGraphJSON(data) {
                 "range": "category",
                 "domain": { "data": "table", "field": "city" },
                 "round": true
-            }
+            },
+            {
+                "name": "xLabels",
+                "type": "ordinal",
+                "domain": { "data": "table", "field": "timestamp" },
+                "range": { "signal": "xL" }
+            },
         ],
         "legends": [{
             "fill": "color",
@@ -531,8 +572,13 @@ function makeGraphJSON(data) {
                 "labels": { "update": { "text": { "field": "value" } } }
             }
         }],
-        "axes": [
-            { "orient": "bottom", "scale": "x" },
+        "axes": [{
+                "scale": "x",
+                "orient": "bottom",
+                "encode": {
+                    "labels": { "update": { "text": { "signal": "scale('xLabels', datum.value).xLabel" } } }
+                }
+            },
             { "orient": "left", "scale": "y" }
         ],
 
@@ -542,7 +588,7 @@ function makeGraphJSON(data) {
                 "facet": {
                     "name": "series",
                     "data": "table",
-                    "groupby": "city"
+                    "groupby": ["city"]
                 }
             },
             "marks": [{
@@ -571,5 +617,7 @@ function makeGraphJSON(data) {
     return obj;
 
 }
+
+
 
 bot.login(key.key);
